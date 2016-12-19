@@ -1,0 +1,17 @@
+---
+_devtool_docroots:
+  - "{{ adminer_install_dir }}"
+  - "{{ pimpmylog_install_dir }}"
+  - "{{ php_xhprof_html_dir }}"
+  - "{{ dashboard_install_dir|default('') }}"
+
+drupalvm_user: "{{ ansible_ssh_user | default(ansible_env.SUDO_USER, true) | default(ansible_env.USER, true) | default(ansible_user_id) }}"
+
+nginx_hosts_custom:
+  - server_name: "pwc.dev"
+    root: /drupal/www/pwc
+    is_php: true
+    common_config: true
+    remote_host: "54.206.85.149"
+    remote_root: "/web/ubuntu/www/scheduling_app/public"
+    pem: "scheduling_app_pwc.pem"

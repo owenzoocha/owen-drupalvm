@@ -1,0 +1,12 @@
+---
+- name: Ensure Varnish dependencies are installed.
+  yum: name={{ item }} state=present
+  with_items:
+    - gcc
+    - libedit-devel
+    - initscripts
+
+- name: Install Varnish from package.
+  yum:
+    name: https://repo.varnish-cache.org/pkg/{{ varnish_version }}/varnish-{{ varnish_version }}-1.el{{ ansible_distribution_version.split(".")[0] }}.{{ ansible_architecture }}.rpm
+    state: present

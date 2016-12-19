@@ -1,0 +1,138 @@
+include /etc/nginx/fastcgi_params;
+
+# location ~ (install|update)\.php {
+#   return 403;
+# }
+
+location = /favicon.ico {
+  log_not_found off;
+  access_log    off;
+}
+
+location = /app_installer/res/osx_update/install.json {
+  log_not_found off;
+  access_log    off;
+}
+
+location = /robots.txt {
+  allow         all;
+  log_not_found off;
+  access_log    off;
+}
+
+# This matters if you use drush
+location = /backup {
+  deny all;
+}
+
+# Block all svn access
+if ($request_uri ~* ^.*\.svn.*$) {
+  return 404;
+}
+
+# Block all git access
+if ($request_uri ~* ^.*\.git.*$) {
+  return 404;
+}
+
+# Deny direct access to backups.
+location ~* ^/sites/.*/files/backup_migrate/ {
+  access_log off;
+  deny       all;
+}
+
+# Deny direct access to backups.
+location ~* ^/sites/.*/files/nightly/ {
+  access_log off;
+  deny       all;
+}
+
+# Very rarely should these ever be accessed outside of your lan
+location ~* \.(txt|log)$ {
+  deny  all;
+}
+
+# location ~ \..*/.*\.php$ {
+#   return 403;
+# }
+
+# Deny some not supported URI like cgi-bin on the Nginx level.
+# location ~* (?:cgi-bin|vti-bin|wp-content) {
+#   access_log off;
+#   return     403;
+# }
+
+# Deny direct access to config files in Drupal 8.
+location ~* ^/sites/.*/files/config_.* {
+  access_log off;
+  deny       all;
+}
+
+# Deny listed requests for security reasons.
+# location ~* (?:delete.+from|insert.+into|select.+from|union.+select|onload|\.php.+src|system\(.+|document\.cookie|\;|\.\.) {
+#   return 403;
+# }
+
+# # Deny listed requests for security reasons.
+# location ~* (/\..*|settings\.php$|\.(?:git|htaccess|engine|inc|info|install|module|profile|pl|po|sh|.*sql|theme|tpl(?:\.php)?|xtmpl)$|^(?:Entries.*|Repository|Root|Tag|Template))$ {
+#   return 403;
+# }
+
+# Allow some known php files (like serve.php in the ad module).
+location ~* /(?:modules|libraries)/(?:contrib/)?(?:ad|tinybrowser|f?ckeditor|tinymce|wysiwyg_spellcheck|ecc|civicrm|fbconnect|radioactivity)/.*\.php$ {
+  access_log               off;
+  try_files                $uri =404;
+  fastcgi_pass             127.0.0.1:9000;
+  fastcgi_intercept_errors on;
+}
+
+location / {
+  # This is cool because no php is touched for static content
+  try_files $uri $uri/ @rewrite;
+}
+
+# Pass through all requests to index.php
+location @rewrite {
+  rewrite ^/(.*)$ /index.php?q=$1;
+}
+
+# Accepted .php files
+location ~ ^/(index|dev|install|cron|xmlrpc)\.php$ {
+  fastcgi_pass             127.0.0.1:9000;
+  fastcgi_index            index.php;
+  fastcgi_param SCRIPT_FILENAME $request_filename;
+  fastcgi_intercept_errors on;
+  fastcgi_read_timeout 120;
+  include fastcgi_params;
+}
+
+# Deny access to any not listed above php files.
+location ~* ^.+\.php$ {
+  deny all;
+}
+
+# Fighting with ImageCache? This little gem is amazing.
+location ~ ^/sites/.*/files/imagecache/ {
+  try_files $uri $uri/ @rewrite;
+  expires 7d;
+}
+
+# For Drupal7 use /styles instead of /imagecache
+location ~ ^/sites/.*/files/styles/ {
+  try_files $uri @rewrite;
+  expires 7d;
+}
+
+location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ {
+  expires       max;
+  log_not_found off;
+  access_log off;
+  try_files     $uri =404;
+}
+
+proxy_buffer_size       512k;
+proxy_buffers           8 512k;
+client_body_buffer_size 512k;
+fastcgi_buffer_size     512k ;
+fastcgi_buffers         8 512k ;
+client_max_body_size    40M;

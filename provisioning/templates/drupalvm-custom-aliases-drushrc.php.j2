@@ -1,0 +1,41 @@
+<?php
+
+/**
+ * Drupal VM drush aliases.
+ *
+ * @see example.aliases.drushrc.php.
+ */
+
+$aliases['{{ item.server_name.split('.')[0] }}.local'] = array(
+  'root' => '{{ item.root }}',
+  'path-aliases' => array(
+    '%dump-dir' => '/drupal/backups/{{ item.server_name.split('.')[0] }}',
+    '%files' => '/drupal/backups/{{ item.server_name.split('.')[0] }}',
+  )
+);
+
+{% if (item.remote_host is defined) %}
+$aliases['{{ item.server_name.split('.')[0] }}.dev'] = array(
+  'uri' => 'http://default',
+  'root' => '{{ item.remote_root if item.remote_root is defined else '/home/ubuntu/www/tdtasker'}}',
+  'remote-host' => '{{ item.remote_host }}',
+  'remote-user' => 'ubuntu',
+  'ssh-options' => '-i /home/vagrant/.ssh/{{ item.pem if item.pem is defined else 'td_apps.pem'}}',
+  'path-aliases' => array(
+    '%dump-dir' => '/home/ubuntu/backups/drush/db',
+    '%dump' => '/home/ubuntu/backups/drush/db/'.date('d-m-y').'.sql',
+    // '%files' => '/home/ubuntu/backups/drush/files'
+  ),
+  'command-specific' => array (
+    'sql-sync' => array (
+      'no-cache' => TRUE,
+      'mode' => 'rlptDz',
+    ),
+    'rsync' => array(
+      'mode' => 'rlptDz',
+    ),
+  ),
+);
+{% endif %}
+
+

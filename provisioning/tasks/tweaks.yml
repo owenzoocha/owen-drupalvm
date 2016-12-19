@@ -1,0 +1,82 @@
+---
+- name: "Install extra dependencies for TD DEV Stuff - avconv, ghostscript etc..."
+  apt: name={{ item }} state=installed
+  with_items:
+    - libav-tools
+    - imagemagick
+
+# - name: "Symlink /drupal/www to ~/www"
+#   file:
+#     src: /drupal/www
+#     path: ~/www
+#     state: link
+
+# - name: Create docroot if it doesn't exist..
+#   file:
+#     path: "{{ item.root }}"
+#     state: directory
+#   with_items: nginx_hosts_custom
+
+- name: "Extra Nginx hosts for the Drupal sites"
+  template:
+    src: ../templates/nginx-vhost.conf.j2
+    dest: "{{ nginx_vhost_path }}/{{ item['server_name'].split(' ') | first }}.conf"
+    force: yes
+    owner: root
+    group: root
+    mode: 0644
+  with_items: "{{ nginx_hosts_custom }}"
+  notify: restart nginx
+  when: drupalvm_webserver == 'nginx'
+
+- name: "Configure Custom Drush Aliases"
+  template:
+    src: ../templates/drupalvm-custom-aliases-drushrc.php.j2
+    dest: "~/.drush/{{ item.server_name.split('.')[0] }}.aliases.drushrc.php"
+  with_items: "{{ nginx_hosts_custom }}"
+  become: no
+
+
+# Set up some tweaks
+# - name: Setting up some tweaks....
+#   file:
+#     src: /drupal/drush/{{ item }}.aliases.drushrc.php
+#     dest: /home/vagrant/.drush/{{ item }}.aliases.drushrc.php
+#     state: link
+#   with_items:
+#     - vmdev
+#     - ais
+#     - pwc
+#     - libapp
+#     - qbe
+#     - qsn
+#     - tdcheckin
+#     - tdtasker
+#     - faq
+#     - tdteam
+#     # - eventcollective
+
+# - name: Setting up some vhosts....
+#   file:
+#     src: /drupal/vhosts/{{ item }}
+#     dest: /etc/nginx/sites-enabled/{{ item }}.conf
+#     state: link
+#   with_items:
+#     - faq
+#     - tdtasker
+#     - tdcheckin
+#     - tdteam
+#     - eventcollective
+#   notify: restart nginx
+
+# - name: Create the directories for each vhost....
+#   file:
+#     path: /var/log/nginx/{{ item }}
+#     state: directory
+#   with_items:
+#     - faq
+#     - tdtasker
+#     - tdcheckin
+#     - tdteam
+#     - eventcollective
+#   notify: restart nginx
